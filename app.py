@@ -172,7 +172,7 @@ def template_config_light(name: str) -> dict:
     return {
         'name': name,
         'unique_id': f'{name}_light',
-        'command_topic': f'homeassistant/light/{name}/state',
+        'command_topic': f'homeassistant/light/{name}/set',
         'state_topic': f'homeassistant/light/{name}/state',
         'schema': 'json',
         'brightness': True
@@ -188,7 +188,7 @@ def template_config_switch(name: str) -> dict:
     return {
         'name': name,
         'unique_id': f'{name}_switch',
-        'command_topic': f'homeassistant/switch/{name}/state',
+        'command_topic': f'homeassistant/switch/{name}/set',
         'state_topic': f'homeassistant/switch/{name}/state',
         'value_template': '{{ value_json.state }}'
         }
