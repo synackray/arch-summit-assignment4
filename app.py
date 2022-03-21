@@ -66,7 +66,10 @@ def connect_mqtt(
         if not rc:
             log.info("Connected to %s.", broker)
         else:
-            log.error("Failed to connect to %s, return code %d\n", broker, rc)
+            raise ConnectionError(
+                log.error(
+                    "Failed to connect to %s, return code %d\n", broker, rc)
+                    )
     client = mqtt_client.Client(clean_session=True)
     client.username_pw_set(user, password)
     client.on_connect = on_connect
