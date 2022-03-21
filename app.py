@@ -78,14 +78,16 @@ def connect_mqtt(
     return client
 
 
-def publish(client: mqtt_client, topic: str, payload: str) -> None:
+def publish(client: mqtt_client, topic: str, payload: str,
+        retain: bool = False) -> None:
     """Publish a topic to the MQTT Broker
 
     :param client: MQTT client session
     :param topic: Topic path
-    :param payload: Payload topic is set to
+    :param payload: Payload topic is set to'
+    :param retain: Determine whether to retain the message
     """
-    result = client.publish(topic, payload)
+    result = client.publish(topic, payload, retain=retain)
     # Status of publish event stored in result[0]
     if not result[0]:
         log.info("Set topic '%s' to '%s'.", topic, payload)
@@ -296,7 +298,7 @@ def publish_random_state(client: mqtt_client, topic: str) -> None:
     # I really dislike accessing globals. Perhaps the better way to do
     # this would be creating a template class.. but this is throw away
     state = globals()[f'random_state_{component}']()
-    publish(client, state_topic, state)
+    publish(client, state_topic, state, retain=True)
 
 
 def main() -> None:
@@ -362,14 +364,14 @@ def main() -> None:
     # Publish initial device states
     for topic in topics:
         # Send the initial data
-        publish_random_state(client, topic, retain=True)
+        publish_random_state(client, topic)
         # Normalize it with a change
         time.sleep(5)
-        publish_random_state(client, topic, retain=True)
+        publish_random_state(client, topic)
     # Update topics from time to time
     while True:
         topic = random.choice(topics)
-        publish_random_state(client, topic, retain=True)
+        publish_random_state(client, topic)
         time.sleep(5)
     # Have the client stay alive forever
     # client.loop_forever()
