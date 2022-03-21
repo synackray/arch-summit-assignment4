@@ -3,6 +3,7 @@
 
 import argparse
 import os
+import json
 
 from paho.mqtt import client as mqtt_client
 
@@ -101,6 +102,28 @@ def subscribe(client: mqtt_client, topic: str) -> None:
     client.on_message = on_message
 
 
+def format_discovery(name: str, device_type: str, manufacturer: str,
+        model: str) -> dict:
+    """Format a Home Assistant discovery message for MQTT devices
+
+    :returns: Dict of formatted Home Assistant discovery message
+    """
+    return {
+        'name': name,
+        'command_topic': f'homeassistant/{device_type}/{name}/set',
+        'payload_on': 'ON',
+        'payload_off': 'OFF',
+        'availability_topic': f'homeassistant/{device_type}/{name}/available',
+        'state_topic': f'homeassistant/{device_type}/{name}/state',
+        'device': {
+            'manufacturer': manufacturer,
+            'model': model,
+            'name': name
+            },
+        'value_template': '{{ value_json.state }}'
+        }
+
+
 def main() -> None:
     """Main function ran when the script is called directly"""
     # Determine whether we're running in a container or by a user
@@ -123,6 +146,15 @@ def main() -> None:
         payload = "False"
         publish(client, topic, payload)
         subscribe(client, topic)
+    # Create a test device discoverable in Home Assistant
+    switch1 = format_discovery(
+        name='bedroom-light1',
+        device_type='switch',
+        manufacturer='Tractor Supply Company',
+        model='TSCWALLSWITCH1'
+        )
+    topic = '/'.join(switch1['state_topic'].split('/')[:-1])
+    publish(client, topic, json.dumps(switch1))
     # Have the client stay alive forever
     client.loop_forever()
 

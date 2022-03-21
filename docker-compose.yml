@@ -1,0 +1,24 @@
+# Architecture Summit - Group Assignment 4
+# Home Assistant
+#
+
+version: '3.5'
+services:
+  homeassistant:
+    container_name: homeassistant
+    restart: unless-stopped
+    image: ghcr.io/home-assistant/home-assistant:stable
+    volumes:
+      - ./homeassistant/config:/config
+    # Needed for auto discovery, bluetooth,...
+    # network_mode: host
+    # privileged: true
+    # depends_on:
+    #   - mosquitto
+    # Can be enabled if you don't want auto discovery
+    ports:
+     - 8123:8123
+    environment:
+      - TZ=America/Chicago
+
+
