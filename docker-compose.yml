@@ -8,6 +8,8 @@ services:
     container_name: homeassistant
     restart: unless-stopped
     image: ghcr.io/home-assistant/home-assistant:stable
+    depends_on:
+      - mosquitto
     volumes:
       - ./homeassistant/config:/config
     # Needed for auto discovery, bluetooth,...
@@ -16,9 +18,32 @@ services:
     # depends_on:
     #   - mosquitto
     # Can be enabled if you don't want auto discovery
-    ports:
-     - 8123:8123
     environment:
       - TZ=America/Chicago
-
-
+    ports:
+     - 8123:8123
+  mosquitto:
+    image: eclipse-mosquitto
+    container_name: mosquitto
+    restart: unless-stopped
+    ports:
+      - 11883:1883
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+      - mosquitto_ha_data:/mosquitto/data
+      - mosquitto_ha_log:/mosquitto/log
+  py2mqtt:
+    image: ghcr.io/synackray/arch-summit-assignment4:latest
+    container_name: py2mqtt
+    restart: unless-stopped
+    depends_on:
+      - mosquitto
+    environment:
+      - MQTT_BROKER=mosquitto
+      - MQTT_PORT=11883
+      - MQTT_USER=puppeteer
+      # This is a terrible practice. Don't hardcode passwords in deployment files.
+      - MQTT_PASS=23748945-Fb61-4FE4-Af4A-9037Fb8B1f64
+volumes:
+  mosquitto_ha_data:
+  mosquitto_ha_log:

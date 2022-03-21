@@ -4,6 +4,8 @@
 import argparse
 import os
 import json
+import random
+import time
 
 from paho.mqtt import client as mqtt_client
 
@@ -100,35 +102,14 @@ def subscribe(client: mqtt_client, topic: str) -> None:
     client.on_message = on_message
 
 
-def format_discovery(name: str, device_type: str, manufacturer: str,
-        model: str) -> dict:
-    """Format a Home Assistant discovery payload for MQTT devices
+def get_parent_topic(config_template: str) -> dict:
+    """Evaluate a device state topic string and get its parent topic
 
-    :returns: Dict of formatted Home Assistant discovery message
+    :param config_template: Generated config template for a device
+    :returns: Dict of formatted Home Assistant parent topic
     """
-    return {
-        'name': name,
-        'command_topic': f'homeassistant/{device_type}/{name}/set',
-        'payload_on': 'ON',
-        'payload_off': 'OFF',
-        'availability_topic': f'homeassistant/{device_type}/{name}/available',
-        'state_topic': f'homeassistant/{device_type}/{name}/state',
-        'device': {
-            'manufacturer': manufacturer,
-            'model': model,
-            'name': name
-            },
-        'value_template': '{{ value_json.state }}'
-        }
-
-def format_config(discovery_msg: str) -> dict:
-    """Format a Home Assistant discovery config topic
-
-    :param discovery_msg: Discovery message from format_discovery
-    :returns: Dict of formatted Home Assistant config topic
-    """
-    topic = '/'.join(discovery_msg['state_topic'].split('/')[:-1])
-    return f'{topic}/config'
+    topic = '/'.join(config_template['state_topic'].split('/')[:-1])
+    return f'{topic}'
 
 
 def template_config_motion(name: str) -> dict:
@@ -139,6 +120,7 @@ def template_config_motion(name: str) -> dict:
     """
     return {
         'name': name,
+        'unique_id': f'{name}_motion',
         'device_class': 'motion',
         'state_topic': f'homeassistant/binary_sensor/{name}/state'
         }
@@ -151,10 +133,10 @@ def template_config_temperature(name: str) -> dict:
     :returns: HA compatible temperature sensor config
     """
     return {
-        'name': name,
+        'name': f'{name} Temperature',
         'device_class': 'temperature',
-        'state_topic': f'homeassistant/sensor/{name}/state',
-        # Do we need to define unit of measurement?
+        'state_topic': f'homeassistant/sensor/{name}T/state',
+        'unit_of_measurement': 'F',
         'value_template': '{{ value_json.temperature }}'
         }
 
@@ -166,10 +148,9 @@ def template_config_humidity(name: str) -> dict:
     :returns: HA compatible humidity sensor config
     """
     return {
-        'name': name,
-        'unique_id': f'{name}_humidity',
+        'name': f'{name} Humidity',
         'device_class': 'humidity',
-        'state_topic': f'homeassistant/sensor/{name}/state',
+        'state_topic': f'homeassistant/sensor/{name}H/state',
         'unit_of_measurement': '%',
         'value_template': '{{ value_json.humidity }}'
         }
@@ -191,6 +172,21 @@ def template_config_light(name: str) -> dict:
         }
 
 
+def template_config_switch(name: str) -> dict:
+    """Generate the config for a switch
+
+    :param name: Name of the switch [alphanumeric]
+    :returns: HA compatible switch config
+    """
+    return {
+        'name': name,
+        'unique_id': f'{name}_switch',
+        'command_topic': f'homeassistant/switch/{name}/set',
+        'state_topic': f'homeassistant/switch/{name}/state',
+        'value_template': '{{ value_json.state }}'
+        }
+
+
 def template_config_climate(name: str) -> dict:
     """Generate the config for a climate controller
 
@@ -199,6 +195,7 @@ def template_config_climate(name: str) -> dict:
     """
     return {
         'name': name,
+        'unique_id': f'{name}_climate',
         'mode_cmd_t': f'homeassistant/climate/{name}/thermostatModeCmd',
         'mode_stat_t': f'homeassistant/climate/{name}/state',
         'mode_stat_tpl': '',
@@ -215,9 +212,87 @@ def template_config_climate(name: str) -> dict:
         'curr_temp_tpl': '',
         'min_temp': '60',
         'max_temp': '110',
-        'temp_step': '1.0',
+        'temp_step': '0.5',
         'modes': ['off', 'heat']
         }
+
+
+def random_state_binary_sensor() -> str:
+    """Generate a random binary sensor state
+
+    :returns: HA compatible MQTT state payload
+    """
+    states = ["ON", "OFF"]
+    result = {'state': random.choice(states)}
+    return json.dumps(result)
+
+
+def random_state_sensor() -> str:
+    """Generate a random sensor state
+
+    :returns: HA compatible MQTT state payload
+    """
+    # I'm being a bit lazy and using the same state generator for both the
+    # temperature and humidity sensors assuming there aren't any other
+    # sensors defined that need different payloads.
+    # Don't do this in production. :^)
+    result = {
+        'temperature': f'{random.uniform(60.0, 110.0):.1f}',
+        'humidity': f'{random.uniform(0.0, 100.0):.0f}',
+        }
+    return json.dumps(result)
+
+
+def random_state_switch() -> str:
+    """Generate a random switch state
+
+    :returns: HA compatible MQTT state payload
+    """
+    states = ["ON", "OFF"]
+    result = {'state': random.choice(states)}
+    return json.dumps(result)
+
+
+def random_state_light() -> str:
+    """Generate a random light state
+
+    :returns: HA compatible MQTT state payload
+    """
+    states = ["ON", "OFF"]
+    result = {
+        'state': random.choice(states),
+        'brightness': random.randint(0, 255),
+        }
+    return json.dumps(result)
+
+def random_state_climate() -> str:
+    """Generate a random light state
+
+    :returns: HA compatible MQTT state payload
+    """
+    states = ["off", "heat"]
+    result = {
+        'mode': random.choice(states),
+        'target_temp': f'{random.uniform(60.0, 110.0):.2f}',
+        'current_temp': f'{random.uniform(60.0, 110.0):.2f}',
+        }
+    return json.dumps(result)
+
+
+def publish_random_state(client: mqtt_client, topic: str) -> None:
+    """Publish an MQTT message to :param topic: with random state
+
+    :param client: MQTT client session
+    :param topic: Parent device topic
+    """
+    state_topic = f'{topic}/state'
+    # Extract the component type
+    component = topic.split('/')[1]
+    # Generate a random state based on the component type
+    # I really dislike accessing globals. Perhaps the better way to do
+    # this would be creating a template class.. but this is throw away
+    state = globals()[f'random_state_{component}']()
+    publish(client, state_topic, state)
 
 
 def main() -> None:
@@ -236,25 +311,64 @@ def main() -> None:
         )
     # Establish the connection
     client.loop()
-    # Publish all of the lab topics
-    for lab in range(args.labs):
-        topic = f'summit/lab4/group{lab}/completed'
-        payload = 'False'
-        publish(client, topic, payload)
-        subscribe(client, topic)
-    # Create a test device discoverable in Home Assistant
+    # TODO - Create binary sensory with "WINNERS!"
+    # TODO - Maybe use some sort of alarm pin?
+    # Create a set of test devices in Home Assistant
     configs = [
+        # Bedroom
         template_config_motion(name='bedroom-motion1'),
         template_config_temperature(name='bedroom-temp1'),
         template_config_humidity(name='bedroom-temp1'),
         template_config_light(name='bedroom-light1'),
-        template_config_climate(name='bedroom-heater1')
+        template_config_light(name='bedroom-lamp1'),
+        template_config_light(name='bedroom-lamp2'),
+        # This isn't working the way I'd hope it would
+        # Disabling it for now
+        # template_config_climate(name='bedroom-heater1')
+        # Office
+        template_config_motion(name='office-motion1'),
+        template_config_temperature(name='office-temp1'),
+        template_config_humidity(name='office-temp1'),
+        template_config_light(name='bedroom-light1'),
+        template_config_light(name='do-not-disturb-light1'),
+        # Living Room
+        template_config_motion(name='lroom-motion1'),
+        template_config_temperature(name='lroom-temp1'),
+        template_config_humidity(name='lroom-temp1'),
+        template_config_light(name='lroom-light1'),
+        template_config_switch(name='lroom-tv1'),
+        # Garage
+        template_config_motion(name='garage-motion1'),
+        template_config_temperature(name='garage-freezer-temp1'),
+        template_config_light(name='garage-light1'),
+        template_config_switch(name='garage-tv1'),
+        # Garden
+        template_config_motion(name='garden-motion1'),
+        template_config_light(name='garden-path-lights1'),
+        template_config_switch(name='garden-founain1'),
         ]
+    topics = []
+    # Publish the device config topics
     for config in configs:
-        topic = format_config(config)
-        publish(client, topic, json.dumps(config))
+        topic = get_parent_topic(config)
+        # Store the parent topic so we can use it later
+        topics.append(topic)
+        config_topic = f'{topic}/config'
+        publish(client, config_topic, json.dumps(config))
+    # Publish initial device states
+    for topic in topics:
+        # Send the initial data
+        publish_random_state(client, topic)
+        # Normalize it with a change
+        time.sleep(5)
+        publish_random_state(client, topic)
+    # Update topics from time to time
+    while True:
+        topic = random.choice(topics)
+        publish_random_state(client, topic)
+        time.sleep(5)
     # Have the client stay alive forever
-    client.loop_forever()
+    # client.loop_forever()
 
 
 if __name__ == '__main__':
