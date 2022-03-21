@@ -9,7 +9,7 @@ services:
     restart: unless-stopped
     image: ghcr.io/home-assistant/home-assistant:stable
     depends_on:
-      - mosquitto
+      - ha-mosquitto
     volumes:
       - ./homeassistant/config:/config
     # Needed for auto discovery, bluetooth,...
@@ -22,9 +22,9 @@ services:
       - TZ=America/Chicago
     ports:
      - 8123:8123
-  mosquitto:
+  ha-mosquitto:
     image: eclipse-mosquitto
-    container_name: mosquitto
+    container_name: ha-mosquitto
     restart: unless-stopped
     ports:
       - 11883:1883
@@ -37,7 +37,7 @@ services:
     container_name: py2mqtt
     restart: unless-stopped
     depends_on:
-      - mosquitto
+      - ha-mosquitto
     environment:
       - MQTT_BROKER=mosquitto
       - MQTT_PORT=11883
