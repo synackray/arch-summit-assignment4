@@ -70,6 +70,7 @@ def connect_mqtt(
     client = mqtt_client.Client(clean_session=True)
     client.username_pw_set(user, password)
     client.on_connect = on_connect
+    log.info("Connecting to MQTT Broker '%s' on port '%s'.", broker, port)
     client.connect(broker, port, keepalive=60)
     return client
 
