@@ -70,7 +70,7 @@ def connect_mqtt(
                 log.error(
                     "Failed to connect to %s, return code %d\n", broker, rc)
                     )
-    client = mqtt_client.Client(clean_session=True)
+    client = mqtt_client.Client(clean_session=False)
     client.username_pw_set(user, password)
     client.on_connect = on_connect
     log.info("Connecting to MQTT Broker '%s' on port '%s'.", broker, port)
@@ -358,18 +358,18 @@ def main() -> None:
         # Store the parent topic so we can use it later
         topics.append(topic)
         config_topic = f'{topic}/config'
-        publish(client, config_topic, json.dumps(config))
+        publish(client, config_topic, json.dumps(config), retain=True)
     # Publish initial device states
     for topic in topics:
         # Send the initial data
-        publish_random_state(client, topic)
+        publish_random_state(client, topic, retain=True)
         # Normalize it with a change
         time.sleep(5)
-        publish_random_state(client, topic)
+        publish_random_state(client, topic, retain=True)
     # Update topics from time to time
     while True:
         topic = random.choice(topics)
-        publish_random_state(client, topic)
+        publish_random_state(client, topic, retain=True)
         time.sleep(5)
     # Have the client stay alive forever
     # client.loop_forever()

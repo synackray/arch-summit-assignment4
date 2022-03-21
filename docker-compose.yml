@@ -15,9 +15,6 @@ services:
     # Needed for auto discovery, bluetooth,...
     # network_mode: host
     # privileged: true
-    # depends_on:
-    #   - mosquitto
-    # Can be enabled if you don't want auto discovery
     environment:
       - TZ=America/Chicago
     ports:
