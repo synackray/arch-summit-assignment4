@@ -39,7 +39,7 @@ services:
     depends_on:
       - ha-mosquitto
     environment:
-      - MQTT_BROKER=mosquitto
+      - MQTT_BROKER=ha-mosquitto
       - MQTT_PORT=11883
       - MQTT_USER=puppeteer
       # This is a terrible practice. Don't hardcode passwords in deployment files.
