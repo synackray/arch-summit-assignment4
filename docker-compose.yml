@@ -40,7 +40,7 @@ services:
       - ha-mosquitto
     environment:
       - MQTT_BROKER=ha-mosquitto
-      - MQTT_PORT=11883
+      - MQTT_PORT=1883
       - MQTT_USER=puppeteer
       # This is a terrible practice. Don't hardcode passwords in deployment files.
       - MQTT_PASS=23748945-Fb61-4FE4-Af4A-9037Fb8B1f64
