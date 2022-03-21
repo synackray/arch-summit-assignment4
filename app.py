@@ -70,7 +70,7 @@ def connect_mqtt(
                 log.error(
                     "Failed to connect to %s, return code %d\n", broker, rc)
                     )
-    client = mqtt_client.Client(clean_session=False)
+    client = mqtt_client.Client(clean_session=True)
     client.username_pw_set(user, password)
     client.on_connect = on_connect
     log.info("Connecting to MQTT Broker '%s' on port '%s'.", broker, port)
