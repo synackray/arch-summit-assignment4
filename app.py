@@ -128,7 +128,8 @@ def template_config_motion(name: str) -> dict:
         'name': name,
         'unique_id': f'{name}_motion',
         'device_class': 'motion',
-        'state_topic': f'homeassistant/binary_sensor/{name}/state'
+        'state_topic': f'homeassistant/binary_sensor/{name}/state',
+        'value_template': '{{ value_json.state }}'
         }
 
 
@@ -171,7 +172,7 @@ def template_config_light(name: str) -> dict:
     return {
         'name': name,
         'unique_id': f'{name}_light',
-        'command_topic': f'homeassistant/light/{name}/set',
+        'command_topic': f'homeassistant/light/{name}/state',
         'state_topic': f'homeassistant/light/{name}/state',
         'schema': 'json',
         'brightness': True
@@ -187,7 +188,7 @@ def template_config_switch(name: str) -> dict:
     return {
         'name': name,
         'unique_id': f'{name}_switch',
-        'command_topic': f'homeassistant/switch/{name}/set',
+        'command_topic': f'homeassistant/switch/{name}/state',
         'state_topic': f'homeassistant/switch/{name}/state',
         'value_template': '{{ value_json.state }}'
         }
@@ -298,10 +299,6 @@ def publish_random_state(client: mqtt_client, topic: str) -> None:
     # I really dislike accessing globals. Perhaps the better way to do
     # this would be creating a template class.. but this is throw away
     state = globals()[f'random_state_{component}']()
-    # Do an ugly fix for motion sensors
-    if 'binary_sensor' in state_topic and 'motion' in state_topic:
-        state = json.loads(state)
-        state = state['state']
     publish(client, state_topic, state, retain=True)
 
 
