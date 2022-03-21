@@ -55,7 +55,7 @@ class EnvironmentArgs:
         self.port = int(os.getenv('MQTT_PORT', 1883))
         self.user =  os.getenv('MQTT_USER', '')
         self.password =  os.getenv('MQTT_PASSWORD', '')
-        self.port = int(os.getenv('MQTT_LABS', 10))
+        self.labs = int(os.getenv('MQTT_LABS', 10))
         self.verbose = bool(os.getenv('VERBOSE', False))
 
 
