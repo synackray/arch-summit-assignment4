@@ -298,6 +298,10 @@ def publish_random_state(client: mqtt_client, topic: str) -> None:
     # I really dislike accessing globals. Perhaps the better way to do
     # this would be creating a template class.. but this is throw away
     state = globals()[f'random_state_{component}']()
+    # Do an ugly fix for motion sensors
+    if 'binary_sensor' in state_topic and 'motion' in state_topic:
+        state = json.loads(state)
+        state = state['state']
     publish(client, state_topic, state, retain=True)
 
 
