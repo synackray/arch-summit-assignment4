@@ -1,6 +1,5 @@
 # Architecture Summit - Group Assignment 4
 # Home Assistant
-#
 
 version: '3.5'
 services:
